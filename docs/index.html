@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Asylum Support | Bot Dashboard</title>
+    <style>
+      :root {
+        --bg: #0f1219;
+        --bg-soft: #171b25;
+        --card: #1d2331;
+        --ink: #f6f7fb;
+        --muted: #b6bed4;
+        --accent: #42d1a6;
+        --accent-2: #3a7aff;
+        --danger: #ff6b6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(900px 500px at 10% -10%, #24324d 0%, transparent 60%),
+          radial-gradient(900px 500px at 100% 0%, #243a2f 0%, transparent 45%),
+          linear-gradient(180deg, var(--bg) 0%, #0a0d14 100%);
+        min-height: 100vh;
+      }
+
+      .wrap {
+        width: min(920px, 92vw);
+        margin: 40px auto;
+      }
+
+      .hero {
+        padding: 28px;
+        border-radius: 20px;
+        border: 1px solid #2a3040;
+        background: linear-gradient(135deg, #1f2636 0%, #161b27 55%, #18262a 100%);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+      }
+
+      .kicker {
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(26px, 3.2vw, 40px);
+        line-height: 1.1;
+      }
+
+      .sub {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 16px;
+      }
+
+      .grid {
+        margin-top: 20px;
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(12, 1fr);
+      }
+
+      .card {
+        grid-column: span 12;
+        background: var(--card);
+        border: 1px solid #2a3040;
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      @media (min-width: 860px) {
+        .card.main {
+          grid-column: span 8;
+        }
+
+        .card.side {
+          grid-column: span 4;
+        }
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        color: #d3dbf4;
+      }
+
+      input {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 10px;
+        border: 1px solid #374057;
+        background: var(--bg-soft);
+        color: var(--ink);
+        margin-bottom: 12px;
+        outline: none;
+      }
+
+      input:focus {
+        border-color: var(--accent-2);
+      }
+
+      .row {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr;
+      }
+
+      @media (min-width: 680px) {
+        .row {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      .btns {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 11px;
+        padding: 11px 14px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .primary {
+        background: linear-gradient(90deg, var(--accent) 0%, #76f7d1 100%);
+        color: #091112;
+      }
+
+      .ghost {
+        background: #293247;
+        color: var(--ink);
+      }
+
+      .danger {
+        background: #49242a;
+        color: #ffdfe4;
+      }
+
+      .url {
+        margin-top: 14px;
+        padding: 10px;
+        border-radius: 10px;
+        background: #141926;
+        border: 1px dashed #36405a;
+        color: #d7def5;
+        font-size: 12px;
+        word-break: break-all;
+        min-height: 58px;
+      }
+
+      .status {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        color: var(--muted);
+      }
+
+      .ok {
+        color: var(--accent);
+      }
+
+      .bad {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <div class="kicker">Discord Bot Dashboard</div>
+        <h1>The Asylum Support Invite Console</h1>
+        <p class="sub">Use this page to generate your bot invite link with the exact permissions you need.</p>
+
+        <div class="grid">
+          <article class="card main">
+            <label for="clientId">Client ID (Application ID)</label>
+            <input id="clientId" placeholder="Example: 1523592965610799236" />
+
+            <div class="row">
+              <div>
+                <label for="permissions">Permissions integer</label>
+                <input id="permissions" value="81984" />
+              </div>
+              <div>
+                <label for="scopes">Scopes</label>
+                <input id="scopes" value="bot applications.commands" />
+              </div>
+            </div>
+
+            <div class="btns">
+              <button class="primary" id="openInvite">Open Invite</button>
+              <button class="ghost" id="copyInvite">Copy Invite URL</button>
+              <button class="danger" id="clearSaved">Reset Saved Values</button>
+            </div>
+
+            <div id="inviteUrl" class="url"></div>
+            <div id="status" class="status"></div>
+          </article>
+
+          <aside class="card side">
+            <h3>Quick setup</h3>
+            <ul>
+              <li>Paste your Client ID</li>
+              <li>Click Open Invite</li>
+              <li>Select your server</li>
+              <li>Authorize with your account</li>
+            </ul>
+            <h3>Required server rights</h3>
+            <ul>
+              <li>Manage Server on your account</li>
+              <li>Bot needs Send Messages</li>
+              <li>Bot needs Read Message History</li>
+              <li>Bot needs Manage Messages for c!send cleanup</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const DEFAULT_CLIENT_ID = "1523592965610799236";
+      const clientId = $("clientId");
+      const permissions = $("permissions");
+      const scopes = $("scopes");
+      const inviteUrl = $("inviteUrl");
+      const status = $("status");
+
+      function buildUrl() {
+        const id = clientId.value.trim();
+        const perms = permissions.value.trim() || "0";
+        const scopeText = scopes.value.trim() || "bot applications.commands";
+        const scopeEncoded = encodeURIComponent(scopeText);
+        if (!id) {
+          return "";
+        }
+        return `https://discord.com/oauth2/authorize?client_id=${id}&scope=${scopeEncoded}&permissions=${perms}`;
+      }
+
+      function render() {
+        const url = buildUrl();
+        if (url) {
+          inviteUrl.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        } else {
+          inviteUrl.textContent = "Add your Client ID above to generate the invite URL.";
+        }
+        if (!url) {
+          status.textContent = "";
+          return;
+        }
+        status.innerHTML = "Invite URL is ready.";
+      }
+
+      function save() {
+        localStorage.setItem("dashboard.clientId", clientId.value.trim());
+        localStorage.setItem("dashboard.permissions", permissions.value.trim());
+        localStorage.setItem("dashboard.scopes", scopes.value.trim());
+      }
+
+      function load() {
+        clientId.value = localStorage.getItem("dashboard.clientId") || DEFAULT_CLIENT_ID;
+        permissions.value = localStorage.getItem("dashboard.permissions") || "81984";
+        scopes.value = localStorage.getItem("dashboard.scopes") || "bot applications.commands";
+      }
+
+      [clientId, permissions, scopes].forEach((el) => {
+        el.addEventListener("input", () => {
+          save();
+          render();
+        });
+      });
+
+      $("openInvite").addEventListener("click", () => {
+        const url = buildUrl();
+        if (!url) {
+          status.innerHTML = '<span class="bad">Please add a Client ID first.</span>';
+          return;
+        }
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+
+      $("copyInvite").addEventListener("click", async () => {
+        const url = buildUrl();
+        if (!url) {
+          status.innerHTML = '<span class="bad">Nothing to copy. Add a Client ID.</span>';
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          status.innerHTML = '<span class="ok">Invite URL copied.</span>';
+        } catch {
+          status.innerHTML = '<span class="bad">Clipboard blocked. Copy from the URL box.</span>';
+        }
+      });
+
+      $("clearSaved").addEventListener("click", () => {
+        localStorage.removeItem("dashboard.clientId");
+        localStorage.removeItem("dashboard.permissions");
+        localStorage.removeItem("dashboard.scopes");
+        load();
+        render();
+        status.innerHTML = "Saved values reset.";
+      });
+
+      load();
+      render();
+    </script>
+  </body>
+</html>
