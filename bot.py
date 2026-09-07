@@ -104,8 +104,10 @@ def has_command_prefix(content: str) -> bool:
 def is_staff(member: discord.Member) -> bool:
     if member.id in STAFF_USER_IDS:
         return True
+    if member.guild_permissions.manage_messages:
+        return True
     if not STAFF_ROLE_IDS:
-        return member.guild_permissions.manage_messages
+        return False
     return any(role.id in STAFF_ROLE_IDS for role in member.roles)
 
 
@@ -116,10 +118,9 @@ async def is_staff_user(user: discord.User) -> bool:
         member = guild.get_member(user.id)
         if not member:
             continue
-        if STAFF_ROLE_IDS:
-            if any(role.id in STAFF_ROLE_IDS for role in member.roles):
-                return True
-        elif member.guild_permissions.manage_messages:
+        if member.guild_permissions.manage_messages:
+            return True
+        if STAFF_ROLE_IDS and any(role.id in STAFF_ROLE_IDS for role in member.roles):
             return True
     return False
 

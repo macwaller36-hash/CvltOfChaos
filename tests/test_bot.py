@@ -62,6 +62,19 @@ class BotScaffoldTests(unittest.TestCase):
         )
         self.assertTrue(bot_module.is_staff(member))
 
+    def test_manage_messages_is_staff_even_with_role_list_configured(self):
+        original_role_ids = bot_module.STAFF_ROLE_IDS
+        try:
+            bot_module.STAFF_ROLE_IDS = [999999999999999999]
+            member = SimpleNamespace(
+                id=555555555555555555,
+                guild_permissions=SimpleNamespace(manage_messages=True),
+                roles=[],
+            )
+            self.assertTrue(bot_module.is_staff(member))
+        finally:
+            bot_module.STAFF_ROLE_IDS = original_role_ids
+
 
 if __name__ == "__main__":
     unittest.main()
