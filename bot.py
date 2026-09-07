@@ -1,5 +1,6 @@
 import os
 import logging
+import random
 
 import discord
 from discord.ext import commands
@@ -7,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.getenv("DISCORD_TOKEN", "")
+TOKEN = os.getenv("DISCORD_TOKEN", "").strip()
 SUPPORT_CHANNEL_ID = int(os.getenv("DISCORD_SUPPORT_CHANNEL_ID", "0"))
 STAFF_ROLE_IDS = [int(x) for x in os.getenv("DISCORD_STAFF_ROLE_IDS", "").split(",") if x.strip()]
 STAFF_USER_IDS = [int(x) for x in os.getenv("DISCORD_STAFF_USER_IDS", "1322411501381877872").split(",") if x.strip()]
@@ -371,15 +372,38 @@ async def ping(ctx: commands.Context) -> None:
     await ctx.send("pong")
 
 
+@bot.command(name="8ball")
+async def eight_ball_command(ctx: commands.Context) -> None:
+    responses = [
+        "Yes.",
+        "No.",
+        "Definitely.",
+        "Not a chance.",
+        "Ask again later.",
+        "Signs point to yes.",
+        "Very doubtful.",
+        "Absolutely.",
+    ]
+    await ctx.send(random.choice(responses))
+
+
+@bot.command(name="coinflip")
+async def coinflip_command(ctx: commands.Context) -> None:
+    await ctx.send(random.choice(["Heads.", "Tails."]))
+
+
 @bot.command(name="start")
 async def start_command(ctx: commands.Context):
-    await ctx.send("This bot is set up for server messages only. Use `hi`, `.message`, `c!send <message>`, or `c!whoami` in the server.")
+    await ctx.send(
+        "This bot is set up for server messages only. Try `!ping`, `!8ball`, `!coinflip`, `hi`, `.message`, `c!send <message>`, or `c!whoami` in the server."
+    )
 
 
 @bot.command(name="help")
 async def help_command(ctx: commands.Context):
     embed = discord.Embed(title="Support Bot Commands", color=discord.Color.green())
     embed.add_field(name="Server", value="Say `hi` and the bot replies with `hey`.", inline=False)
+    embed.add_field(name="Fun", value="Use `!8ball`, `c!8ball`, `!coinflip`, or `c!coinflip` when you're bored.", inline=False)
     embed.add_field(name="Staff", value="Use `c!send <message>`, `.message`, or `c!whoami` in the server.", inline=False)
     await ctx.send(embed=embed)
 
@@ -592,6 +616,12 @@ async def on_command_error(ctx: commands.Context, error: Exception):
     if isinstance(error, commands.CheckFailure):
         await ctx.reply("You do not have permission to use that command.")
         return
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.reply("Unknown command. Try `!help`, `!ping`, `!8ball`, or `!coinflip`.")
+        return
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.reply("That command is missing required information. Try `!help` for examples.")
+        return
     logger.exception("Unhandled command error: %s", error)
     try:
         await ctx.reply("An unexpected error occurred.")
@@ -602,7 +632,12 @@ async def on_command_error(ctx: commands.Context, error: Exception):
 def main() -> None:
     if not TOKEN:
         raise RuntimeError("DISCORD_TOKEN is not set")
-    bot.run(TOKEN)
+    try:
+        bot.run(TOKEN)
+    except discord.LoginFailure as exc:
+        raise RuntimeError(
+            "Discord login failed: DISCORD_TOKEN is invalid. Regenerate the bot token in the Discord Developer Portal and update your host environment variable."
+        ) from exc
 
 
 if __name__ == "__main__":
