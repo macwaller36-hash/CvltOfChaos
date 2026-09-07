@@ -1,0 +1,23 @@
+services:
+  - type: worker
+    name: theasylumbot
+    env: python
+    plan: starter
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -u bot.py
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_SUPPORT_CHANNEL_ID
+        sync: false
+      - key: DISCORD_STAFF_ROLE_IDS
+        sync: false
+      - key: DISCORD_STAFF_USER_IDS
+        sync: false
+      - key: DISCORD_CLOSE_CHANNEL_ID
+        sync: false
+      - key: DISCORD_CLOSED_CHANNEL_ID
+        sync: false
+      - key: MESSAGE_ONLY_MODE
+        value: "1"
