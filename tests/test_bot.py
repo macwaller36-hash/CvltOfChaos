@@ -2,6 +2,7 @@ import importlib.util
 import pathlib
 import sys
 import unittest
+from unittest.mock import patch
 from types import SimpleNamespace
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -32,6 +33,18 @@ class BotScaffoldTests(unittest.TestCase):
         self.assertEqual(bot_module.get_blackjack_total(["A", "K"]), 21)
         self.assertEqual(bot_module.get_blackjack_total(["A", "9", "A"]), 21)
         self.assertEqual(bot_module.get_blackjack_total(["A", "9", "A", "5"]), 16)
+
+    def test_rps_round_supports_forced_user_win(self):
+        with patch.object(bot_module.random, "random", return_value=0.1):
+            bot_pick, result = bot_module.get_rps_round("rock")
+        self.assertEqual(bot_pick, "scissors")
+        self.assertEqual(result, "You win.")
+
+    def test_rps_round_supports_forced_bot_win(self):
+        with patch.object(bot_module.random, "random", return_value=0.9):
+            bot_pick, result = bot_module.get_rps_round("rock")
+        self.assertEqual(bot_pick, "paper")
+        self.assertEqual(result, "You lose.")
 
     def test_dm_intro_lists_supported_options(self):
         text = bot_module.get_dm_intro_text().lower()

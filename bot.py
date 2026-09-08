@@ -132,6 +132,128 @@ def format_blackjack_hand(hand: list[str]) -> str:
     return " ".join(hand)
 
 
+def play_blackjack_hand() -> list[str]:
+    hand = [draw_blackjack_card(), draw_blackjack_card()]
+    while get_blackjack_total(hand) < 17:
+        hand.append(draw_blackjack_card())
+    return hand
+
+
+def get_rps_round(user_pick: str) -> tuple[str, str]:
+    # No-tie mode: bot pick is chosen so each side has a 50/50 chance to win.
+    winning_pick = {"rock": "scissors", "paper": "rock", "scissors": "paper"}
+    losing_pick = {"rock": "paper", "paper": "scissors", "scissors": "rock"}
+    if random.random() < 0.5:
+        return winning_pick[user_pick], "You win."
+    return losing_pick[user_pick], "You lose."
+
+
+class BlackjackView(discord.ui.View):
+    def __init__(self, player_id: int):
+        super().__init__(timeout=90)
+        self.player_id = player_id
+        self.player_hand = [draw_blackjack_card(), draw_blackjack_card()]
+        self.dealer_hand = [draw_blackjack_card(), draw_blackjack_card()]
+        self.finished = False
+        self.message: discord.Message | None = None
+
+    def render(self, reveal_dealer: bool = False, result: str | None = None) -> str:
+        player_total = get_blackjack_total(self.player_hand)
+
+        if reveal_dealer:
+            dealer_cards = format_blackjack_hand(self.dealer_hand)
+            dealer_total = get_blackjack_total(self.dealer_hand)
+            lines = [
+                "Blackjack round:",
+                f"You: **{format_blackjack_hand(self.player_hand)}** (total: **{player_total}**)",
+                f"Dealer: **{dealer_cards}** (total: **{dealer_total}**)",
+            ]
+            if result:
+                lines.append(result)
+            return "\n".join(lines)
+
+        dealer_show = self.dealer_hand[0]
+        return (
+            "Blackjack round:\n"
+            f"You: **{format_blackjack_hand(self.player_hand)}** (total: **{player_total}**)\n"
+            f"Dealer: **{dealer_show} ?**\n"
+            "Press **Hit** or **Stand**."
+        )
+
+    def finish_and_lock(self) -> None:
+        self.finished = True
+        for child in self.children:
+            child.disabled = True
+
+    def dealer_play(self) -> None:
+        while get_blackjack_total(self.dealer_hand) < 17:
+            self.dealer_hand.append(draw_blackjack_card())
+
+    def resolve_winner_text(self) -> str:
+        player_total = get_blackjack_total(self.player_hand)
+        dealer_total = get_blackjack_total(self.dealer_hand)
+
+        if player_total > 21:
+            return "You bust. Dealer wins."
+        if dealer_total > 21:
+            return "Dealer busts. You win!"
+        if player_total > dealer_total:
+            return "You win!"
+        if dealer_total > player_total:
+            return "Dealer wins."
+        return random.choice(["Push broken by luck: You win!", "Push broken by luck: Dealer wins."])
+
+    async def guard_player(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id == self.player_id:
+            return True
+        await interaction.response.send_message("Only the player who started this blackjack round can press these buttons.", ephemeral=True)
+        return False
+
+    @discord.ui.button(label="Hit", style=discord.ButtonStyle.primary)
+    async def hit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await self.guard_player(interaction):
+            return
+        if self.finished:
+            await interaction.response.defer()
+            return
+
+        self.player_hand.append(draw_blackjack_card())
+        player_total = get_blackjack_total(self.player_hand)
+
+        if player_total >= 21:
+            if player_total == 21:
+                self.dealer_play()
+            result = self.resolve_winner_text()
+            self.finish_and_lock()
+            await interaction.response.edit_message(content=self.render(reveal_dealer=True, result=result), view=self)
+            return
+
+        await interaction.response.edit_message(content=self.render(), view=self)
+
+    @discord.ui.button(label="Stand", style=discord.ButtonStyle.secondary)
+    async def stand(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await self.guard_player(interaction):
+            return
+        if self.finished:
+            await interaction.response.defer()
+            return
+
+        self.dealer_play()
+        result = self.resolve_winner_text()
+        self.finish_and_lock()
+        await interaction.response.edit_message(content=self.render(reveal_dealer=True, result=result), view=self)
+
+    async def on_timeout(self) -> None:
+        if self.finished:
+            return
+        self.finish_and_lock()
+        if self.message is not None:
+            try:
+                await self.message.edit(content=self.render(reveal_dealer=True, result="Round timed out."), view=self)
+            except Exception:
+                pass
+
+
 def is_staff(member: discord.Member) -> bool:
     if member.id in STAFF_USER_IDS:
         return True
@@ -453,51 +575,16 @@ async def rps_command(ctx: commands.Context, choice: str = "") -> None:
         await ctx.send("Usage: `!rps rock`, `!rps paper`, or `!rps scissors`")
         return
 
-    bot_pick = random.choice(["rock", "paper", "scissors"])
-    if user_pick == bot_pick:
-        result = "It's a tie."
-    elif (user_pick == "rock" and bot_pick == "scissors") or (
-        user_pick == "paper" and bot_pick == "rock"
-    ) or (user_pick == "scissors" and bot_pick == "paper"):
-        result = "You win."
-    else:
-        result = "You lose."
+    bot_pick, result = get_rps_round(user_pick)
 
     await ctx.send(f"You picked **{user_pick}**. I picked **{bot_pick}**. {result}")
 
 
 @bot.command(name="blackjack")
 async def blackjack_command(ctx: commands.Context) -> None:
-    player_hand = [draw_blackjack_card(), draw_blackjack_card()]
-    dealer_hand = [draw_blackjack_card(), draw_blackjack_card()]
-
-    while get_blackjack_total(player_hand) < 17:
-        player_hand.append(draw_blackjack_card())
-
-    if get_blackjack_total(player_hand) <= 21:
-        while get_blackjack_total(dealer_hand) < 17:
-            dealer_hand.append(draw_blackjack_card())
-
-    player_total = get_blackjack_total(player_hand)
-    dealer_total = get_blackjack_total(dealer_hand)
-
-    if player_total > 21:
-        result = "You bust. Dealer wins."
-    elif dealer_total > 21:
-        result = "Dealer busts. You win!"
-    elif player_total > dealer_total:
-        result = "You win!"
-    elif dealer_total > player_total:
-        result = "Dealer wins."
-    else:
-        result = "Push (tie)."
-
-    await ctx.send(
-        "Blackjack round:\n"
-        f"You: **{format_blackjack_hand(player_hand)}** (total: **{player_total}**)\n"
-        f"Dealer: **{format_blackjack_hand(dealer_hand)}** (total: **{dealer_total}**)\n"
-        f"{result}"
-    )
+    view = BlackjackView(ctx.author.id)
+    message = await ctx.send(view.render(), view=view)
+    view.message = message
 
 
 @bot.command(name="start")
@@ -735,7 +822,7 @@ async def on_command_error(ctx: commands.Context, error: Exception):
         await ctx.reply("You do not have permission to use that command.")
         return
     if isinstance(error, commands.CommandNotFound):
-        await ctx.reply("Unknown command. Try `!help`, `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, or `!rps`.")
+        await ctx.reply("Unknown command. Try `!help`, `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, `!rps`, or `!blackjack`.")
         return
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply("That command is missing required information. Try `!help` for examples.")
