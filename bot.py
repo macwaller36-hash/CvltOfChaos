@@ -393,10 +393,52 @@ async def coinflip_command(ctx: commands.Context) -> None:
     await ctx.send(random.choice(["Heads.", "Tails."]))
 
 
+@bot.command(name="roll")
+async def roll_command(ctx: commands.Context, sides: str = "6") -> None:
+    if not sides.isdigit():
+        await ctx.send("Usage: `!roll [number_of_sides]` (example: `!roll 20`)")
+        return
+    total_sides = int(sides)
+    if total_sides < 2 or total_sides > 1000:
+        await ctx.send("Please pick a dice size between 2 and 1000.")
+        return
+    await ctx.send(f"You rolled **{random.randint(1, total_sides)}** (1-{total_sides}).")
+
+
+@bot.command(name="choose")
+async def choose_command(ctx: commands.Context, *, options: str) -> None:
+    choices = [item.strip() for item in options.split("|") if item.strip()]
+    if len(choices) < 2:
+        await ctx.send("Usage: `!choose option 1 | option 2 | option 3`")
+        return
+    await ctx.send(f"I choose: **{random.choice(choices)}**")
+
+
+@bot.command(name="rps")
+async def rps_command(ctx: commands.Context, choice: str = "") -> None:
+    user_pick = choice.strip().lower()
+    valid = {"rock", "paper", "scissors"}
+    if user_pick not in valid:
+        await ctx.send("Usage: `!rps rock`, `!rps paper`, or `!rps scissors`")
+        return
+
+    bot_pick = random.choice(["rock", "paper", "scissors"])
+    if user_pick == bot_pick:
+        result = "It's a tie."
+    elif (user_pick == "rock" and bot_pick == "scissors") or (
+        user_pick == "paper" and bot_pick == "rock"
+    ) or (user_pick == "scissors" and bot_pick == "paper"):
+        result = "You win."
+    else:
+        result = "You lose."
+
+    await ctx.send(f"You picked **{user_pick}**. I picked **{bot_pick}**. {result}")
+
+
 @bot.command(name="start")
 async def start_command(ctx: commands.Context):
     await ctx.send(
-        "This bot is set up for server messages only. Try `!ping`, `!8ball`, `!coinflip`, `hi`, `.message`, `c!send <message>`, or `c!whoami` in the server."
+        "This bot is set up for server messages only. Try `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, `!rps`, `hi`, `.message`, `c!send <message>`, or `c!whoami` in the server."
     )
 
 
@@ -404,7 +446,14 @@ async def start_command(ctx: commands.Context):
 async def help_command(ctx: commands.Context):
     embed = discord.Embed(title="Support Bot Commands", color=discord.Color.green())
     embed.add_field(name="Server", value="Say `hi` and the bot replies with `hey`.", inline=False)
-    embed.add_field(name="Fun", value="Use `!8ball`, `c!8ball`, `!coinflip`, or `c!coinflip` when you're bored.", inline=False)
+    embed.add_field(
+        name="Fun",
+        value=(
+            "Use `!8ball`, `!coinflip`, `!roll [sides]`, `!choose option 1 | option 2`, or `!rps rock|paper|scissors`. "
+            "All also work with `c!` prefix."
+        ),
+        inline=False,
+    )
     embed.add_field(name="Staff", value="Use `c!send <message>`, `.message`, or `c!whoami` in the server.", inline=False)
     await ctx.send(embed=embed)
 

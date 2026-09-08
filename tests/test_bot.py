@@ -22,6 +22,9 @@ class BotScaffoldTests(unittest.TestCase):
         self.assertIn("ping", bot_module.bot.all_commands)
         self.assertIn("8ball", bot_module.bot.all_commands)
         self.assertIn("coinflip", bot_module.bot.all_commands)
+        self.assertIn("roll", bot_module.bot.all_commands)
+        self.assertIn("choose", bot_module.bot.all_commands)
+        self.assertIn("rps", bot_module.bot.all_commands)
         self.assertIn("send", bot_module.bot.all_commands)
 
     def test_dm_intro_lists_supported_options(self):
