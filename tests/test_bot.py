@@ -46,6 +46,11 @@ class BotScaffoldTests(unittest.TestCase):
         self.assertTrue(bot_module.should_reply_with_hey("  HI  "))
         self.assertFalse(bot_module.should_reply_with_hey("this is hidden"))
 
+    def test_cheeseburger_noise_detection(self):
+        self.assertTrue(bot_module.should_play_cheeseburger_noise("cheese burger"))
+        self.assertTrue(bot_module.should_play_cheeseburger_noise("I want a cheeseburger"))
+        self.assertFalse(bot_module.should_play_cheeseburger_noise("burger only"))
+
     def test_staff_proxy_message_parsing(self):
         self.assertEqual(bot_module.get_staff_proxy_message(".suppp"), "suppp")
         self.assertEqual(bot_module.get_staff_proxy_message(". hello there"), "hello there")

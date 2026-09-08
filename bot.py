@@ -90,6 +90,11 @@ def should_reply_with_hey(content: str) -> bool:
     return content.strip().lower() == "hi"
 
 
+def should_play_cheeseburger_noise(content: str) -> bool:
+    text = content.strip().lower()
+    return "cheese burger" in text or "cheeseburger" in text
+
+
 def get_staff_proxy_message(content: str) -> str | None:
     if not content.startswith("."):
         return None
@@ -518,6 +523,9 @@ async def on_message(message: discord.Message):
         if should_reply_with_hey(message.content):
             await message.channel.send("hey")
 
+        if should_play_cheeseburger_noise(message.content):
+            await message.channel.send("*SIZZLE SIZZLE* burger noise")
+
         proxied_message = get_staff_proxy_message(message.content)
         if proxied_message is not None and is_staff(message.author):
             try:
@@ -667,7 +675,7 @@ async def on_command_error(ctx: commands.Context, error: Exception):
         await ctx.reply("You do not have permission to use that command.")
         return
     if isinstance(error, commands.CommandNotFound):
-        await ctx.reply("Unknown command. Try `!help`, `!ping`, `!8ball`, or `!coinflip`.")
+        await ctx.reply("Unknown command. Try `!help`, `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, or `!rps`.")
         return
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply("That command is missing required information. Try `!help` for examples.")
