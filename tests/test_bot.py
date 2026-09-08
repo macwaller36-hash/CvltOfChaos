@@ -25,7 +25,13 @@ class BotScaffoldTests(unittest.TestCase):
         self.assertIn("roll", bot_module.bot.all_commands)
         self.assertIn("choose", bot_module.bot.all_commands)
         self.assertIn("rps", bot_module.bot.all_commands)
+        self.assertIn("blackjack", bot_module.bot.all_commands)
         self.assertIn("send", bot_module.bot.all_commands)
+
+    def test_blackjack_total_handles_aces(self):
+        self.assertEqual(bot_module.get_blackjack_total(["A", "K"]), 21)
+        self.assertEqual(bot_module.get_blackjack_total(["A", "9", "A"]), 21)
+        self.assertEqual(bot_module.get_blackjack_total(["A", "9", "A", "5"]), 16)
 
     def test_dm_intro_lists_supported_options(self):
         text = bot_module.get_dm_intro_text().lower()

@@ -106,6 +106,32 @@ def has_command_prefix(content: str) -> bool:
     return content.startswith(COMMAND_PREFIXES)
 
 
+def draw_blackjack_card() -> str:
+    return random.choice(["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"])
+
+
+def get_blackjack_total(hand: list[str]) -> int:
+    total = 0
+    aces = 0
+    for card in hand:
+        if card == "A":
+            total += 11
+            aces += 1
+        elif card in {"J", "Q", "K"}:
+            total += 10
+        else:
+            total += int(card)
+
+    while total > 21 and aces > 0:
+        total -= 10
+        aces -= 1
+    return total
+
+
+def format_blackjack_hand(hand: list[str]) -> str:
+    return " ".join(hand)
+
+
 def is_staff(member: discord.Member) -> bool:
     if member.id in STAFF_USER_IDS:
         return True
@@ -440,10 +466,44 @@ async def rps_command(ctx: commands.Context, choice: str = "") -> None:
     await ctx.send(f"You picked **{user_pick}**. I picked **{bot_pick}**. {result}")
 
 
+@bot.command(name="blackjack")
+async def blackjack_command(ctx: commands.Context) -> None:
+    player_hand = [draw_blackjack_card(), draw_blackjack_card()]
+    dealer_hand = [draw_blackjack_card(), draw_blackjack_card()]
+
+    while get_blackjack_total(player_hand) < 17:
+        player_hand.append(draw_blackjack_card())
+
+    if get_blackjack_total(player_hand) <= 21:
+        while get_blackjack_total(dealer_hand) < 17:
+            dealer_hand.append(draw_blackjack_card())
+
+    player_total = get_blackjack_total(player_hand)
+    dealer_total = get_blackjack_total(dealer_hand)
+
+    if player_total > 21:
+        result = "You bust. Dealer wins."
+    elif dealer_total > 21:
+        result = "Dealer busts. You win!"
+    elif player_total > dealer_total:
+        result = "You win!"
+    elif dealer_total > player_total:
+        result = "Dealer wins."
+    else:
+        result = "Push (tie)."
+
+    await ctx.send(
+        "Blackjack round:\n"
+        f"You: **{format_blackjack_hand(player_hand)}** (total: **{player_total}**)\n"
+        f"Dealer: **{format_blackjack_hand(dealer_hand)}** (total: **{dealer_total}**)\n"
+        f"{result}"
+    )
+
+
 @bot.command(name="start")
 async def start_command(ctx: commands.Context):
     await ctx.send(
-        "This bot is set up for server messages only. Try `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, `!rps`, `hi`, `.message`, `c!send <message>`, or `c!whoami` in the server."
+        "This bot is set up for server messages only. Try `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, `!rps`, `!blackjack`, `hi`, `.message`, `c!send <message>`, or `c!whoami` in the server."
     )
 
 
@@ -454,7 +514,7 @@ async def help_command(ctx: commands.Context):
     embed.add_field(
         name="Fun",
         value=(
-            "Use `!8ball`, `!coinflip`, `!roll [sides]`, `!choose option 1 | option 2`, or `!rps rock|paper|scissors`. "
+            "Use `!8ball`, `!coinflip`, `!roll [sides]`, `!choose option 1 | option 2`, `!rps rock|paper|scissors`, or `!blackjack`. "
             "All also work with `c!` prefix."
         ),
         inline=False,
