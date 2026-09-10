@@ -15,6 +15,7 @@ STAFF_USER_IDS = [int(x) for x in os.getenv("DISCORD_STAFF_USER_IDS", "132241150
 CLOSE_CHANNEL_ID = int(os.getenv("DISCORD_CLOSE_CHANNEL_ID", "0"))
 CLOSED_NOTIFY_CHANNEL_ID = int(os.getenv("DISCORD_CLOSED_CHANNEL_ID", "0"))
 MESSAGE_ONLY_MODE = os.getenv("MESSAGE_ONLY_MODE", "1") == "1"
+STARTING_COINS = int(os.getenv("STARTING_COINS", "100"))
 
 intents = discord.Intents.default()
 intents.members = True
@@ -48,6 +49,7 @@ pending_partnerships = {}
 pending_ticket_details = {}
 ticket_threads_user = {}
 ticket_threads_thread = {}
+coin_balances: dict[int, int] = {}
 
 CATEGORY_KEYWORDS = {
     "support": "Support",
@@ -104,6 +106,68 @@ def get_staff_proxy_message(content: str) -> str | None:
 
 def has_command_prefix(content: str) -> bool:
     return content.startswith(COMMAND_PREFIXES)
+
+
+def get_balance(user_id: int) -> int:
+    if user_id not in coin_balances:
+        coin_balances[user_id] = STARTING_COINS
+    return coin_balances[user_id]
+
+
+def set_balance(user_id: int, amount: int) -> int:
+    coin_balances[user_id] = max(0, amount)
+    return coin_balances[user_id]
+
+
+def add_balance(user_id: int, delta: int) -> int:
+    return set_balance(user_id, get_balance(user_id) + delta)
+
+
+def parse_bet(raw: str, user_id: int) -> int | None:
+    text = raw.strip().lower()
+    balance = get_balance(user_id)
+    if text in {"all", "max"}:
+        return balance if balance > 0 else None
+    if not text.isdigit():
+        return None
+    bet = int(text)
+    if bet <= 0 or bet > balance:
+        return None
+    return bet
+
+
+def get_slot_multiplier(reel: list[str]) -> int:
+    if len(set(reel)) == 1:
+        return 5
+    if len(set(reel)) == 2:
+        return 2
+    return 0
+
+
+def get_roulette_color(number: int) -> str:
+    if number == 0:
+        return "green"
+    reds = {
+        1,
+        3,
+        5,
+        7,
+        9,
+        12,
+        14,
+        16,
+        18,
+        19,
+        21,
+        23,
+        25,
+        27,
+        30,
+        32,
+        34,
+        36,
+    }
+    return "red" if number in reds else "black"
 
 
 def draw_blackjack_card() -> str:
@@ -546,6 +610,73 @@ async def coinflip_command(ctx: commands.Context) -> None:
     await ctx.send(random.choice(["Heads.", "Tails."]))
 
 
+@bot.command(name="coins")
+async def coins_command(ctx: commands.Context) -> None:
+    balance = get_balance(ctx.author.id)
+    await ctx.send(f"You have **{balance}** coins.")
+
+
+@bot.command(name="slot")
+async def slot_command(ctx: commands.Context, bet: str = "10") -> None:
+    wager = parse_bet(bet, ctx.author.id)
+    if wager is None:
+        await ctx.send("Usage: !slot <bet>. Use a number up to your balance, or all.")
+        return
+
+    symbols = ["🍒", "🍋", "🔔", "⭐", "💎"]
+    reel = [random.choice(symbols), random.choice(symbols), random.choice(symbols)]
+    multiplier = get_slot_multiplier(reel)
+
+    if multiplier == 0:
+        add_balance(ctx.author.id, -wager)
+        result_text = f"You lost **{wager}** coins."
+    else:
+        winnings = wager * multiplier
+        add_balance(ctx.author.id, winnings - wager)
+        result_text = f"You won **{winnings}** coins ({multiplier}x)."
+
+    balance = get_balance(ctx.author.id)
+    await ctx.send(f"Slot: {' '.join(reel)}\n{result_text}\nBalance: **{balance}**")
+
+
+@bot.command(name="roulette")
+async def roulette_command(ctx: commands.Context, pick: str = "red", bet: str = "10") -> None:
+    wager = parse_bet(bet, ctx.author.id)
+    if wager is None:
+        await ctx.send("Usage: !roulette <red|black|green|0-36> <bet>")
+        return
+
+    choice = pick.strip().lower()
+    spin = random.randint(0, 36)
+    color = get_roulette_color(spin)
+
+    win = False
+    payout = 0
+
+    if choice in {"red", "black"}:
+        win = choice == color
+        payout = wager * 2
+    elif choice == "green":
+        win = color == "green"
+        payout = wager * 14
+    elif choice.isdigit() and 0 <= int(choice) <= 36:
+        win = int(choice) == spin
+        payout = wager * 36
+    else:
+        await ctx.send("Usage: !roulette <red|black|green|0-36> <bet>")
+        return
+
+    if win:
+        add_balance(ctx.author.id, payout - wager)
+        result_text = f"You won **{payout}** coins."
+    else:
+        add_balance(ctx.author.id, -wager)
+        result_text = f"You lost **{wager}** coins."
+
+    balance = get_balance(ctx.author.id)
+    await ctx.send(f"Roulette spun **{spin} ({color})**.\n{result_text}\nBalance: **{balance}**")
+
+
 @bot.command(name="roll")
 async def roll_command(ctx: commands.Context, sides: str = "6") -> None:
     if not sides.isdigit():
@@ -590,7 +721,7 @@ async def blackjack_command(ctx: commands.Context) -> None:
 @bot.command(name="start")
 async def start_command(ctx: commands.Context):
     await ctx.send(
-        "This bot is set up for server messages only. Try `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, `!rps`, `!blackjack`, `hi`, `.message`, `c!send <message>`, or `c!whoami` in the server."
+        "This bot is set up for server messages only. Try !ping, !8ball, !coinflip, !roll, !choose, !rps, !blackjack, !coins, !slot, !roulette, hi, .message, c!send <message>, or c!whoami in the server."
     )
 
 
@@ -601,8 +732,8 @@ async def help_command(ctx: commands.Context):
     embed.add_field(
         name="Fun",
         value=(
-            "Use `!8ball`, `!coinflip`, `!roll [sides]`, `!choose option 1 | option 2`, `!rps rock|paper|scissors`, or `!blackjack`. "
-            "All also work with `c!` prefix."
+            "Use !8ball, !coinflip, !roll [sides], !choose option 1 | option 2, !rps rock|paper|scissors, !blackjack, !coins, !slot <bet>, or !roulette <pick> <bet>. "
+            "All also work with c! prefix."
         ),
         inline=False,
     )
@@ -822,7 +953,7 @@ async def on_command_error(ctx: commands.Context, error: Exception):
         await ctx.reply("You do not have permission to use that command.")
         return
     if isinstance(error, commands.CommandNotFound):
-        await ctx.reply("Unknown command. Try `!help`, `!ping`, `!8ball`, `!coinflip`, `!roll`, `!choose`, `!rps`, or `!blackjack`.")
+        await ctx.reply("Unknown command. Try !help, !ping, !8ball, !coinflip, !roll, !choose, !rps, !blackjack, !coins, !slot, or !roulette.")
         return
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.reply("That command is missing required information. Try `!help` for examples.")

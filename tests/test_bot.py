@@ -27,6 +27,9 @@ class BotScaffoldTests(unittest.TestCase):
         self.assertIn("choose", bot_module.bot.all_commands)
         self.assertIn("rps", bot_module.bot.all_commands)
         self.assertIn("blackjack", bot_module.bot.all_commands)
+        self.assertIn("coins", bot_module.bot.all_commands)
+        self.assertIn("slot", bot_module.bot.all_commands)
+        self.assertIn("roulette", bot_module.bot.all_commands)
         self.assertIn("send", bot_module.bot.all_commands)
 
     def test_blackjack_total_handles_aces(self):
@@ -45,6 +48,26 @@ class BotScaffoldTests(unittest.TestCase):
             bot_pick, result = bot_module.get_rps_round("rock")
         self.assertEqual(bot_pick, "paper")
         self.assertEqual(result, "You lose.")
+
+    def test_slot_multiplier_rules(self):
+        self.assertEqual(bot_module.get_slot_multiplier(["🍒", "🍒", "🍒"]), 5)
+        self.assertEqual(bot_module.get_slot_multiplier(["🍒", "🍒", "🍋"]), 2)
+        self.assertEqual(bot_module.get_slot_multiplier(["🍒", "🍋", "⭐"]), 0)
+
+    def test_roulette_color_mapping(self):
+        self.assertEqual(bot_module.get_roulette_color(0), "green")
+        self.assertEqual(bot_module.get_roulette_color(1), "red")
+        self.assertEqual(bot_module.get_roulette_color(2), "black")
+
+    def test_parse_bet_supports_all_and_limits(self):
+        user_id = 777
+        bot_module.coin_balances.clear()
+        bot_module.set_balance(user_id, 120)
+        self.assertEqual(bot_module.parse_bet("all", user_id), 120)
+        self.assertEqual(bot_module.parse_bet("max", user_id), 120)
+        self.assertEqual(bot_module.parse_bet("50", user_id), 50)
+        self.assertIsNone(bot_module.parse_bet("500", user_id))
+        self.assertIsNone(bot_module.parse_bet("zero", user_id))
 
     def test_dm_intro_lists_supported_options(self):
         text = bot_module.get_dm_intro_text().lower()
