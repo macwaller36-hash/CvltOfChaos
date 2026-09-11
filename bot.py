@@ -607,7 +607,9 @@ async def eight_ball_command(ctx: commands.Context) -> None:
 
 @bot.command(name="ballright")
 async def ballright_command(ctx: commands.Context) -> None:
-    await eight_ball_command(ctx)
+    await ctx.send(
+        "BAZFAZGAZRAZZAZVAZKAZJAZDRAZBRAZFRUZGRUZKRIZPLUZTRUZZURVURKURBURGURRUKZUKFUKVEKZEKREKBEXFEXGEXREXZEXVEZKEXJEXBRAXGRAXFRAXKRAXZRAXVRAZALLRIGHT"
+    )
 
 
 @bot.command(name="coinflip")
