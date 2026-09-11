@@ -605,6 +605,11 @@ async def eight_ball_command(ctx: commands.Context) -> None:
     await ctx.send(random.choice(responses))
 
 
+@bot.command(name="ballright")
+async def ballright_command(ctx: commands.Context) -> None:
+    await eight_ball_command(ctx)
+
+
 @bot.command(name="coinflip")
 async def coinflip_command(ctx: commands.Context) -> None:
     await ctx.send(random.choice(["Heads.", "Tails."]))
