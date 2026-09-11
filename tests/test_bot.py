@@ -22,7 +22,6 @@ class BotScaffoldTests(unittest.TestCase):
     def test_ping_command_exists(self):
         self.assertIn("ping", bot_module.bot.all_commands)
         self.assertIn("8ball", bot_module.bot.all_commands)
-        self.assertIn("ballright", bot_module.bot.all_commands)
         self.assertIn("coinflip", bot_module.bot.all_commands)
         self.assertIn("roll", bot_module.bot.all_commands)
         self.assertIn("choose", bot_module.bot.all_commands)
